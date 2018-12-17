@@ -32,6 +32,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
 import static android.opengl.GLES20.*;
+import static android.opengl.Matrix.perspectiveM;
 
 public class EGLActivity extends AppCompatActivity {
 
@@ -76,11 +77,13 @@ public class EGLActivity extends AppCompatActivity {
 
                     float dx = event.getX() - sx;
                     float dy = event.getY() - sy;
+                    sx = event.getX();
+                    sy = event.getY();
                     if (angleX < 180f || angleX > -180f)
-                        angleX += dx / ((float) screenWidth) * 5f;
+                        angleX += dx / ((float) screenWidth) * 180f;
                     if (angleY < 180f || angleY > -180f)
-                        angleY += dy / ((float) screenHeight) * 5f;
-                    Log.i("demoGlv", dx + " " + dy + " " + screenHeight);
+                        angleY += dy / ((float) screenHeight) * 180f;
+
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
 //                    angleX = 0;
 //                    angleY = 0;
@@ -103,9 +106,8 @@ public class EGLActivity extends AppCompatActivity {
         private int texture;
         private int uTextureUnitLocation;
         private int aTextureCoordinatesLocation;
-        private final float[] projectionMatrix = new float[16];
+        private float[] projectionMatrix = new float[16];
         private int uMatrixLocation;
-        float[] mVMatrix = new float[16]; // 摄像机位置朝向9参数矩阵
         private float y = 20f;
         private float x = 50f;
 
@@ -327,7 +329,6 @@ public class EGLActivity extends AppCompatActivity {
         public void onSurfaceChanged(GL10 gl10, int width, int height) {
             // 设置绘图的窗口(可以理解成在画布上划出一块区域来画图)
             glViewport(0, 0, width, height);
-
             final float aspectRatio = width > height ?
                     (float) width / (float) height :
                     (float) height / (float) width;
