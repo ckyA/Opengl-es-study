@@ -25,21 +25,7 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".MyService"
-            android:enabled="true"
-            android:exported="true" />
-        <service
-            android:name=".MyService2"
-            android:enabled="true"
-            android:exported="true" />
-        <service
-            android:name=".MyService3"
-            android:enabled="true"
-            android:exported="true" />
-
-        <activity android:name=".BaseActivity" />
-        <activity android:name=".EGLActivity"></activity>
+        <activity android:name=".EGLActivity"/>
     </application>
 
 </manifest>
