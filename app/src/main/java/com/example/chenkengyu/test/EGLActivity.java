@@ -74,11 +74,16 @@ public class EGLActivity extends AppCompatActivity {
                     sx = event.getX();
                     sy = event.getY();
                 } else if (event.getAction() == MotionEvent.ACTION_MOVE) {
-
                     float dx = event.getX() - sx;
                     float dy = event.getY() - sy;
                     sx = event.getX();
                     sy = event.getY();
+//
+//                    if (((sy > screenHeight / 2))) {
+//                        renderer.translate(dx / (float) screenWidth, dy / (float) screenHeight);
+//                        return true;
+//                    }
+
                     if (angleX < 180f || angleX > -180f)
                         angleX += dx / ((float) screenWidth) * 180f;
                     if (angleY < 180f || angleY > -180f)
@@ -93,8 +98,11 @@ public class EGLActivity extends AppCompatActivity {
         });
     }
 
+    int index = 0;
     public void onClick(View view) {
-
+        float[] directions = new float[] {0.1f, -0.1f, -0.1f, 0.1f};
+        renderer.translate(directions[index % 4], directions[index % 2]);
+        index++;
     }
 
 
@@ -108,60 +116,70 @@ public class EGLActivity extends AppCompatActivity {
         private int aTextureCoordinatesLocation;
         private float[] projectionMatrix = new float[16];
         private int uMatrixLocation;
-        private float y = 20f;
-        private float x = 50f;
 
-        final float cubePosition[] =
+        private float y = 0f;
+        private float x = 0f;
+
+        float l = 0.2f;
+        final float[] cubePosition =
                 {
-                        -0.5f, -0.5f, -0.5f,
-                        0.5f, -0.5f, -0.5f,
-                        0.5f, 0.5f, -0.5f,
-                        0.5f, 0.5f, -0.5f,
-                        -0.5f, 0.5f, -0.5f,
-                        -0.5f, -0.5f, -0.5f,
+                        // In OpenGL counter-clockwise winding is default. This means that when we look at a triangle,
+                        // if the points are counter-clockwise we are looking at the "front". If not we are looking at
+                        // the back. OpenGL has an optimization where all back-facing triangles are culled, since they
+                        // usually represent the backside of an object and aren't visible anyways.
 
-                        -0.5f, -0.5f, 0.5f,
-                        0.5f, -0.5f, 0.5f,
-                        0.5f, 0.5f, 0.5f,
-                        0.5f, 0.5f, 0.5f,
-                        -0.5f, 0.5f, 0.5f,
-                        -0.5f, -0.5f, 0.5f,
+                        // Front face
+                        -l, l, l,
+                        -l, -l, l,
+                        l, l, l,
+                        -l, -l, l,
+                        l, -l, l,
+                        l, l, l,
 
-                        -0.5f, 0.5f, 0.5f,
-                        -0.5f, 0.5f, -0.5f,
-                        -0.5f, -0.5f, -0.5f,
-                        -0.5f, -0.5f, -0.5f,
-                        -0.5f, -0.5f, 0.5f,
-                        -0.5f, 0.5f, 0.5f,
+                        // Right face
+                        l, l, l,
+                        l, -l, l,
+                        l, l, -l,
+                        l, -l, l,
+                        l, -l, -l,
+                        l, l, -l,
 
-                        0.5f, 0.5f, 0.5f,
-                        0.5f, 0.5f, -0.5f,
-                        0.5f, -0.5f, -0.5f,
-                        0.5f, -0.5f, -0.5f,
-                        0.5f, -0.5f, 0.5f,
-                        0.5f, 0.5f, 0.5f,
+                        // Back face
+                        l, l, -l,
+                        l, -l, -l,
+                        -l, l, -l,
+                        l, -l, -l,
+                        -l, -l, -l,
+                        -l, l, -l,
 
-                        -0.5f, -0.5f, -0.5f,
-                        0.5f, -0.5f, -0.5f,
-                        0.5f, -0.5f, 0.5f,
-                        0.5f, -0.5f, 0.5f,
-                        -0.5f, -0.5f, 0.5f,
-                        -0.5f, -0.5f, -0.5f,
+                        // Left face
+                        -l, l, -l,
+                        -l, -l, -l,
+                        -l, l, l,
+                        -l, -l, -l,
+                        -l, -l, l,
+                        -l, l, l,
 
-                        -0.5f, 0.5f, -0.5f,
-                        0.5f, 0.5f, -0.5f,
-                        0.5f, 0.5f, 0.5f,
-                        0.5f, 0.5f, 0.5f,
-                        -0.5f, 0.5f, 0.5f,
-                        -0.5f, 0.5f, -0.5f
+                        // Top face
+                        -l, l, -l,
+                        -l, l, l,
+                        l, l, -l,
+                        -l, l, l,
+                        l, l, l,
+                        l, l, -l,
 
-
+                        // Bottom face
+                        l, -l, -l,
+                        l, -l, l,
+                        -l, -l, -l,
+                        l, -l, l,
+                        -l, -l, l,
+                        -l, -l, -l,
                 };
 
-
         public void translate(float x, float y) {
-            this.x = x;
-            this.y = y;
+            this.x += x;
+            this.y -= y;
         }
 
         /**
@@ -243,6 +261,7 @@ public class EGLActivity extends AppCompatActivity {
          */
         @Override
         public void onSurfaceCreated(GL10 gl10, EGLConfig eglConfig) {
+            Log.i("GL_TAG", "onSurfaceCreated");
             // 初始化着色器
             // 基于顶点着色器与片元着色器创建程序
             program = createProgram(verticesShader, fragmentShader);
@@ -254,11 +273,11 @@ public class EGLActivity extends AppCompatActivity {
             texture = loadTexture(EGLActivity.this, R.drawable.winter_outfits);
             // 设置clear color颜色RGBA(这里仅仅是设置清屏时GLES20.glClear()用的颜色值而不是执行清屏)
             GLES20.glClearColor(1.0f, 1, 0.5f, 1.0f);
-
-
             GLES20.glUseProgram(program);
 
             GLES20.glEnable(GLES20.GL_DEPTH_TEST);
+            // Use culling to remove back faces.
+            GLES20.glEnable(GLES20.GL_CULL_FACE);
 
 //            // 为画笔指定顶点位置数据(vPosition)
 //            GLES20.glVertexAttribPointer(vPosition, 2, GLES20.GL_FLOAT, false, 0, vertices);
@@ -273,43 +292,53 @@ public class EGLActivity extends AppCompatActivity {
             //把选定的纹理单元传给片段着色器中的u_TextureUnit，
             glUniform1i(uTextureUnitLocation, 0);
             glVertexAttribPointer(aTextureCoordinatesLocation, 2, GL_FLOAT, false, 0, getFBVertices(new float[]{
+                    // Front face
+                    0.0f, 0.0f,
+                    0.0f, 1.0f,
+                    1.0f, 0.0f,
                     0.0f, 1.0f,
                     1.0f, 1.0f,
                     1.0f, 0.0f,
-                    1.0f, 0.0f,
-                    0.0f, 0.0f,
-                    0.0f, 1.0f,
 
+                    // Right face
+                    0.0f, 0.0f,
+                    0.0f, 1.0f,
+                    1.0f, 0.0f,
                     0.0f, 1.0f,
                     1.0f, 1.0f,
                     1.0f, 0.0f,
-                    1.0f, 0.0f,
+
+                    // Back face
                     0.0f, 0.0f,
                     0.0f, 1.0f,
+                    1.0f, 0.0f,
                     0.0f, 1.0f,
                     1.0f, 1.0f,
                     1.0f, 0.0f,
-                    1.0f, 0.0f,
+
+                    // Left face
                     0.0f, 0.0f,
                     0.0f, 1.0f,
+                    1.0f, 0.0f,
                     0.0f, 1.0f,
                     1.0f, 1.0f,
                     1.0f, 0.0f,
-                    1.0f, 0.0f,
+
+                    // Top face
                     0.0f, 0.0f,
                     0.0f, 1.0f,
+                    1.0f, 0.0f,
                     0.0f, 1.0f,
                     1.0f, 1.0f,
                     1.0f, 0.0f,
-                    1.0f, 0.0f,
+
+                    // Bottom face
                     0.0f, 0.0f,
                     0.0f, 1.0f,
+                    1.0f, 0.0f,
                     0.0f, 1.0f,
                     1.0f, 1.0f,
-                    1.0f, 0.0f,
-                    1.0f, 0.0f,
-                    0.0f, 0.0f,
-                    0.0f, 1.0f
+                    1.0f, 0.0f
             }));
             glEnableVertexAttribArray(aTextureCoordinatesLocation);
 
@@ -327,6 +356,7 @@ public class EGLActivity extends AppCompatActivity {
          */
         @Override
         public void onSurfaceChanged(GL10 gl10, int width, int height) {
+            Log.i("GL_TAG", "onSurfaceChanged");
             // 设置绘图的窗口(可以理解成在画布上划出一块区域来画图)
             glViewport(0, 0, width, height);
             final float aspectRatio = width > height ?
@@ -353,6 +383,7 @@ public class EGLActivity extends AppCompatActivity {
          */
         @Override
         public void onDrawFrame(GL10 gl10) {
+            Log.i("GL_TAG", "onDrawFrame");
             // 清屏
             GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
 
@@ -362,9 +393,15 @@ public class EGLActivity extends AppCompatActivity {
 
             float[] MVPM = new float[16];
             float[] MM = new float[16];
-            Matrix.setRotateM(MM, 0, angleY, 1, 0, 0);
+            float[] VM = new float[16];
+            float[] VPM = new float[16];
+            Matrix.setIdentityM(MM, 0);
+            Matrix.translateM(MM, 0, x, y, 0);
+            Matrix.rotateM(MM, 0, angleY, 1, 0, 0);
             Matrix.rotateM(MM, 0, angleX, 0, 1, 0);
-            Matrix.multiplyMM(MVPM, 0, projectionMatrix, 0, MM, 0);
+            Matrix.setLookAtM(VM, 0, 0, 0, 0, -1, -0.5f, -1, 0, 1, 0);
+            Matrix.multiplyMM(VPM, 0, projectionMatrix, 0, VM, 0);
+            Matrix.multiplyMM(MVPM, 0, VPM, 0, MM, 0);
 
             GLES20.glUniformMatrix4fv(uMatrixLocation, 1, false, MVPM, 0);
 
