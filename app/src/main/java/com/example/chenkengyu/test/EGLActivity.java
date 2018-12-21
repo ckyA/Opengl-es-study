@@ -43,6 +43,13 @@ public class EGLActivity extends AppCompatActivity {
     private int screenHeight;
     private int screenWidth;
 
+    enum OperationType {
+        TRANSLATION,
+        ROTATION
+    }
+
+    private OperationType[] operationTypes = new OperationType[]{OperationType.TRANSLATION, OperationType.ROTATION};
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,8 +106,9 @@ public class EGLActivity extends AppCompatActivity {
     }
 
     int index = 0;
+
     public void onClick(View view) {
-        float[] directions = new float[] {0.1f, -0.1f, -0.1f, 0.1f};
+        float[] directions = new float[]{0.1f, -0.1f, -0.1f, 0.1f};
         renderer.translate(directions[index % 4], directions[index % 2]);
         index++;
     }
@@ -110,6 +118,12 @@ public class EGLActivity extends AppCompatActivity {
 
         private int program;
         private int vPosition;
+        private int vNormalPosition;
+        private int uLightPosition;
+        private int Kd;
+        private int Ld;
+        private int ModelViewMatrix;
+        private int NormalMatrix;
         private int uColor;
         private int texture;
         private int uTextureUnitLocation;
@@ -176,6 +190,105 @@ public class EGLActivity extends AppCompatActivity {
                         -l, -l, l,
                         -l, -l, -l,
                 };
+
+        float[] textruePosition = new float[]{
+                // Front face
+                0.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f,
+                1.0f, 0.0f,
+
+                // Right face
+                0.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f,
+                1.0f, 0.0f,
+
+                // Back face
+                0.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f,
+                1.0f, 0.0f,
+
+                // Left face
+                0.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f,
+                1.0f, 0.0f,
+
+                // Top face
+                0.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f,
+                1.0f, 0.0f,
+
+                // Bottom face
+                0.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 0.0f,
+                0.0f, 1.0f,
+                1.0f, 1.0f,
+                1.0f, 0.0f
+        };
+        private float[] normalPosition = new float[]{
+                // Front face
+                0, 0, 1,
+                0, 0, 1,
+                0, 0, 1,
+                0, 0, 1,
+                0, 0, 1,
+                0, 0, 1,
+
+                // Right face
+                1, 0, 0,
+                1, 0, 0,
+                1, 0, 0,
+                1, 0, 0,
+                1, 0, 0,
+                1, 0, 0,
+
+                // Back face
+                0, 0, -1,
+                0, 0, -1,
+                0, 0, -1,
+                0, 0, -1,
+                0, 0, -1,
+                0, 0, -1,
+
+                // Left face
+                -1, 0, 0,
+                -1, 0, 0,
+                -1, 0, 0,
+                -1, 0, 0,
+                -1, 0, 0,
+                -1, 0, 0,
+
+                // Top face
+                0, 1, 0,
+                0, 1, 0,
+                0, 1, 0,
+                0, 1, 0,
+                0, 1, 0,
+                0, 1, 0,
+
+                // Bottom face
+                0, -1, 0,
+                0, -1, 0,
+                0, -1, 0,
+                0, -1, 0,
+                0, -1, 0,
+                0, -1, 0
+        };
 
         public void translate(float x, float y) {
             this.x += x;
@@ -267,10 +380,18 @@ public class EGLActivity extends AppCompatActivity {
             program = createProgram(verticesShader, fragmentShader);
             // 获取着色器中的属性引用id(传入的字符串就是我们着色器脚本中的属性名)
             vPosition = GLES20.glGetAttribLocation(program, "vPosition");
+
+            vNormalPosition = GLES20.glGetAttribLocation(program, "vNormalPosition");
+            uLightPosition = GLES20.glGetUniformLocation(program, "LightPosition");
+            Kd = GLES20.glGetUniformLocation(program, "Kd");
+            Ld = GLES20.glGetUniformLocation(program, "Ld");
+            ModelViewMatrix = GLES20.glGetUniformLocation(program, "ModelViewMatrix");
+            NormalMatrix = GLES20.glGetUniformLocation(program, "NormalMatrix");
+
             uColor = GLES20.glGetUniformLocation(program, "uColor");
             uTextureUnitLocation = GLES20.glGetUniformLocation(program, "u_TextureUnit");
             aTextureCoordinatesLocation = GLES20.glGetAttribLocation(program, "a_TextureCoordinates");
-            texture = loadTexture(EGLActivity.this, R.drawable.winter_outfits);
+
             // 设置clear color颜色RGBA(这里仅仅是设置清屏时GLES20.glClear()用的颜色值而不是执行清屏)
             GLES20.glClearColor(1.0f, 1, 0.5f, 1.0f);
             GLES20.glUseProgram(program);
@@ -284,66 +405,28 @@ public class EGLActivity extends AppCompatActivity {
 //            // 允许顶点位置数据数组
 //            GLES20.glEnableVertexAttribArray(vPosition);
 //            // 设置属性uColor(颜色 索引,R,G,B,A)
-            GLES20.glUniform4f(uColor, 0.5f, 1.0f, 0.0f, 1.0f);
+
+            GLES20.glUniform3f(Kd, 1.0f, 1.0f, 1.0f);
+            GLES20.glUniform3f(Ld, 1.0f, 1.0f, 1.0f);
+            GLES20.glUniform4f(uLightPosition, 0.3f, 0.7f, 1f, 1.0f);
+            glVertexAttribPointer(vNormalPosition, 3, GL_FLOAT, false, 0, getFBVertices(normalPosition));
+            glEnableVertexAttribArray(vNormalPosition);
+            //vNormalPosition
+
 //            //激活纹理单元，GL_TEXTURE0代表纹理单元0，GL_TEXTURE1代表纹理单元1，以此类推。OpenGL使用纹理单元来表示被绘制的纹理
+            texture = loadTexture(EGLActivity.this, R.drawable.winter_outfits);
             glActiveTexture(GL_TEXTURE0);
             //绑定纹理到这个纹理单元
             glBindTexture(GL_TEXTURE_2D, texture);
             //把选定的纹理单元传给片段着色器中的u_TextureUnit，
             glUniform1i(uTextureUnitLocation, 0);
-            glVertexAttribPointer(aTextureCoordinatesLocation, 2, GL_FLOAT, false, 0, getFBVertices(new float[]{
-                    // Front face
-                    0.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 1.0f,
-                    1.0f, 0.0f,
-
-                    // Right face
-                    0.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 1.0f,
-                    1.0f, 0.0f,
-
-                    // Back face
-                    0.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 1.0f,
-                    1.0f, 0.0f,
-
-                    // Left face
-                    0.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 1.0f,
-                    1.0f, 0.0f,
-
-                    // Top face
-                    0.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 1.0f,
-                    1.0f, 0.0f,
-
-                    // Bottom face
-                    0.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 0.0f,
-                    0.0f, 1.0f,
-                    1.0f, 1.0f,
-                    1.0f, 0.0f
-            }));
+            glVertexAttribPointer(aTextureCoordinatesLocation, 2, GL_FLOAT, false, 0, getFBVertices(textruePosition));
             glEnableVertexAttribArray(aTextureCoordinatesLocation);
 
             glVertexAttribPointer(vPosition, 3, GL_FLOAT, false, 0, getFBVertices(cubePosition));
             glEnableVertexAttribArray(vPosition);
+
+
         }
 
 
@@ -384,38 +467,68 @@ public class EGLActivity extends AppCompatActivity {
         @Override
         public void onDrawFrame(GL10 gl10) {
             Log.i("GL_TAG", "onDrawFrame");
-            // 清屏
             GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT | GLES20.GL_COLOR_BUFFER_BIT);
+            drawCube(0, 0);
+        }
 
-//            float[] translationMatrix = new float[16];
-//            Matrix.translateM(translationMatrix, 0, x, y, 0);
-//            Matrix.multiplyMV(projectionMatrix, 0, projectionMatrix, 0, translationMatrix, 0);
-
+        private void drawCube(float offsetX, float offsetY) {
             float[] MVPM = new float[16];
             float[] MM = new float[16];
             float[] VM = new float[16];
-            float[] VPM = new float[16];
+            float[] MVM = new float[16];
             Matrix.setIdentityM(MM, 0);
-            Matrix.translateM(MM, 0, x, y, 0);
+            Matrix.translateM(MM, 0, x + offsetX, y + offsetY, 0);
             Matrix.rotateM(MM, 0, angleY, 1, 0, 0);
             Matrix.rotateM(MM, 0, angleX, 0, 1, 0);
             Matrix.setLookAtM(VM, 0, 0, 0, 0, -1, -0.5f, -1, 0, 1, 0);
-            Matrix.multiplyMM(VPM, 0, projectionMatrix, 0, VM, 0);
-            Matrix.multiplyMM(MVPM, 0, VPM, 0, MM, 0);
+            Matrix.multiplyMM(MVM, 0, VM, 0, MM, 0);
+            Matrix.multiplyMM(MVPM, 0, projectionMatrix, 0, MVM, 0);
 
             GLES20.glUniformMatrix4fv(uMatrixLocation, 1, false, MVPM, 0);
+
+            GLES20.glUniformMatrix4fv(ModelViewMatrix, 1, false, MM, 0);
+
+            GLES20.glUniformMatrix3fv(NormalMatrix, 1, false, mat4ToMat3(MM), 0);
 
             // 绘制
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 36);
         }
 
+        private float[] mat4ToMat3(float[] input) {
+            if (input.length == 16) {
+                float[] out = new float[9];
+                out[0] = input[0];
+                out[1] = input[1];
+                out[2] = input[2];
+                out[3] = input[4];
+                out[4] = input[5];
+                out[5] = input[6];
+                out[6] = input[8];
+                out[7] = input[9];
+                out[8] = input[10];
+                return out;
+            }
+            return null;
+        }
+
         // 顶点着色器的脚本
         private static final String verticesShader
                 = "attribute vec3 vPosition;            \n" // 顶点位置属性vPosition
-                + "uniform mat4 u_Matrix;               \n"
+                + "attribute vec3 vNormalPosition;            \n"
                 + "attribute vec2 a_TextureCoordinates; \n"
-                + "varying vec2 v_TextureCoordinates;"
+                + "varying vec2 v_TextureCoordinates; \n"
+                + "varying vec3 LightIntensity;  \n"
+                + "uniform vec4 LightPosition;  \n"
+                + "uniform vec3 Kd;             \n"
+                + "uniform vec3 Ld;            \n"
+                + "uniform mat4 ModelViewMatrix;\n"
+                + "uniform mat3 NormalMatrix;\n"
+                + "uniform mat4 u_Matrix; \n"
                 + "void main(){                         \n"
+                + "vec3 tnorm = normalize( NormalMatrix * vNormalPosition); \n"
+                + "vec4 eyeCoords = ModelViewMatrix * vec4(vPosition,1.0);\n"
+                + "vec3 s = normalize(vec3(LightPosition - eyeCoords));\n"
+                + "LightIntensity = Ld * Kd * max( dot( s, tnorm ), 0.5); "
                 + " v_TextureCoordinates = a_TextureCoordinates;\n"
                 + "   gl_Position = u_Matrix * vec4(vPosition,1.0);\n" // 确定顶点位置
                 + "}";
@@ -424,10 +537,11 @@ public class EGLActivity extends AppCompatActivity {
         private static final String fragmentShader
                 = "precision mediump float;         \n" // 声明float类型的精度为中等(精度越高越耗资源)
                 + "uniform vec4 uColor;             \n" // uniform的属性uColor
+                + "varying vec3 LightIntensity;   \n"
                 + "uniform sampler2D u_TextureUnit;\n"
                 + "varying vec2 v_TextureCoordinates;"
                 + "void main(){                     \n"
-                + "   gl_FragColor = texture2D(u_TextureUnit, v_TextureCoordinates);        \n" // 给此片元的填充色
+                + "   gl_FragColor = vec4(LightIntensity, 1.0) *texture2D(u_TextureUnit, v_TextureCoordinates) + vec4(0.3, 0.3, 0.3, 1.0) * texture2D(u_TextureUnit, v_TextureCoordinates);        \n" // 给此片元的填充色
                 + "}";
 
     }
