@@ -106,7 +106,6 @@ public class EGLActivity extends AppCompatActivity {
     }
 
     int index = 0;
-
     public void onClick(View view) {
         float[] directions = new float[]{0.1f, -0.1f, -0.1f, 0.1f};
         renderer.translate(directions[index % 4], directions[index % 2]);
@@ -135,8 +134,7 @@ public class EGLActivity extends AppCompatActivity {
         private float x = 0f;
 
         float l = 0.2f;
-        final float[] cubePosition =
-                {
+        final float[] cubePosition = {
                         // In OpenGL counter-clockwise winding is default. This means that when we look at a triangle,
                         // if the points are counter-clockwise we are looking at the "front". If not we are looking at
                         // the back. OpenGL has an optimization where all back-facing triangles are culled, since they
